@@ -14,6 +14,7 @@ from django.views.decorators.csrf import csrf_exempt
 def index(request):
     return HttpResponse("Hello, world. You're at the polls index.")
 
+
 @csrf_exempt
 def sentimentAnalysis(request):
     body_unicode = request.body.decode('utf-8')
@@ -22,7 +23,7 @@ def sentimentAnalysis(request):
 
     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cpu')
 
     HIDDEN_DIM = 256
     OUTPUT_DIM = 1
@@ -33,20 +34,20 @@ def sentimentAnalysis(request):
     bert = BertModel.from_pretrained('bert-base-uncased')
 
     model = BERTGRUSentiment(bert,
-                         HIDDEN_DIM,
-                         OUTPUT_DIM,
-                         N_LAYERS,
-                         BIDIRECTIONAL,
-                         DROPOUT)
+                             HIDDEN_DIM,
+                             OUTPUT_DIM,
+                             N_LAYERS,
+                             BIDIRECTIONAL,
+                             DROPOUT)
 
-
-    model.load_state_dict(torch.load('./nlpapp/tut6-model.pt'))
+    model.load_state_dict(torch.load(
+        './nlpapp/tut6-model.pt', map_location=torch.device('cpu')))
 
     model = model.to(device)
     criterion = nn.BCEWithLogitsLoss()
     criterion = criterion.to(device)
 
-    return HttpResponse( predict_sentiment(model, tokenizer, device, userText))
+    return HttpResponse(predict_sentiment(model, tokenizer, device, userText))
 
 
 def predict_sentiment(model, tokenizer, device, sentence):
